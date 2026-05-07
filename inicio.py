@@ -95,4 +95,3 @@ with tab2:
             """, unsafe_allow_html=True)
     else:
         st.info("¡Sé el primero en publicar una lámina!")
-
