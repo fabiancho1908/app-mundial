@@ -2,84 +2,143 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# Configuración de la App
-st.set_page_config(page_title="Figuritas Colombia", page_icon="⚽", layout="centered")
+# 1. Configuración de Marca Mundial 2026
+st.set_page_config(page_title="Figuritas Pro 2026", layout="centered")
 
-# --- BASE DE DATOS ---
-conn = sqlite3.connect('laminas.db', check_same_thread=False)
-c = conn.cursor()
-# Volvemos a la estructura simple de ciudad
-c.execute('CREATE TABLE IF NOT EXISTS intercambio (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT, ciudad TEXT, repetida TEXT, contacto TEXT)')
-conn.commit()
-
-# --- LISTA EXTENSA DE CIUDADES DE COLOMBIA ---
-todas_ciudades = sorted([
-    "Bogotá D.C.", "Medellín", "Cali", "Barranquilla", "Cartagena", "Soledad", "Cúcuta", "Ibagué", "Soacha", "Bucaramanga",
-    "Villavicencio", "Santa Marta", "Valledupar", "Pereira", "Bello", "Montería", "Pastos", "Buenaventura", "Manizales",
-    "Neiva", "Palmira", "Riohacha", "Sincelejo", "Popayán", "Itagüí", "Floridablanca", "Envigado", "Tuluá", "San Andrés",
-    "Dosquebradas", "Apartadó", "Tumaco", "Tunja", "Girón", "Uribia", "Maicao", "Florencia", "Chía", "Sogamoso", 
-    "Duitama", "Cartago", "Facatativá", "Fusagasugá", "Ipiales", "Pitalito", "Zipaquirá", "Jamundí", "Yopal", "Malambo",
-    "Mosquera", "Funza", "Madrid", "Cajicá", "Sabaneta", "La Estrella", "Caldas", "Rionegro", "Marinilla", "Caucasia",
-    "Turbo", "Magangué", "Apartadó", "Quibdó", "Girardot", "Buga", "Aguachica", "Ocaña", "Piedecuesta", "Pamplona",
-    "Barrancabermeja", "Arauca", "Leticia", "Mocoa", "Inírida", "San José del Guaviare", "Mitú", "Puerto Carreño", "Otra"
-])
-
-# --- DISEÑO CSS ---
+# CSS Personalizado con Colores del Mundial 2026
 st.markdown("""
     <style>
-    .stButton>button { width: 100%; border-radius: 12px; background: linear-gradient(135deg, #8D1B3D 0%, #d32f2f 100%); color: white; font-weight: bold; }
-    .cromo-card { border-radius: 15px; padding: 20px; background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 5px solid #8D1B3D; text-align: center; }
-    .whatsapp-btn { background-color: #25d366; color: white !important; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; }
+    /* Colores oficiales: Morado, Verde Lima y Azul */
+    :root {
+        --purple: #612D8A;
+        --lime: #D6FF00;
+        --blue: #00A3E0;
+    }
+    
+    .stApp { background-color: #FFFFFF; }
+    
+    /* Encabezado con degradado mundialista */
+    .main-header {
+        background: linear-gradient(135deg, #612D8A 0%, #00A3E0 100%);
+        padding: 20px;
+        border-radius: 0px 0px 25px 25px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* Estilo de los números del álbum (Cromos) */
+    .stButton>button {
+        border-radius: 12px;
+        border: 2px solid #612D8A;
+        background-color: white;
+        color: #612D8A;
+        font-weight: bold;
+        transition: 0.3s;
+        height: 50px;
+        width: 100%;
+    }
+    
+    .stButton>button:hover {
+        background-color: #D6FF00;
+        border-color: #D6FF00;
+        color: black;
+    }
+
+    /* Tarjetas de Intercambio */
+    .swap-card {
+        background: white;
+        border-radius: 15px;
+        padding: 15px;
+        border-left: 8px solid #D6FF00;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 15px;
+    }
+
+    /* Barra de Navegación Inferior Fija */
+    .nav-bottom {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #612D8A;
+        display: flex;
+        justify-content: space-around;
+        padding: 12px;
+        z-index: 1000;
+        border-top: 3px solid #D6FF00;
+    }
+    .nav-item { color: white; font-size: 10px; text-align: center; text-decoration: none; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚽ Figuritas Colombia 2026")
+# 2. Base de Datos
+conn = sqlite3.connect('laminas_pro.db', check_same_thread=False)
+c = conn.cursor()
+c.execute('CREATE TABLE IF NOT EXISTS intercambio (id INTEGER PRIMARY KEY, usuario TEXT, ciudad TEXT, repetida TEXT, contacto TEXT)')
+conn.commit()
 
-tab1, tab2 = st.tabs(["✨ PUBLICAR", "🔍 BUSCAR"])
+# --- INTERFAZ ---
+st.markdown('<div class="main-header"><h1>⚽ MUNDIAL 2026</h1><p>INTERCAMBIO COLOMBIA</p></div>', unsafe_allow_html=True)
+
+# Pestañas al estilo de la app que mostraste
+tab1, tab2, tab3 = st.tabs(["🗂️ MI ÁLBUM", "🤝 CAMBIOS", "📊 PROGRESO"])
 
 with tab1:
-    st.subheader("Registra tu repetida")
-    with st.form("registro_simple"):
-        u_nombre = st.text_input("👤 Tu Nombre")
-        u_ciudad = st.selectbox("📍 Ciudad o Municipio", todas_ciudades)
-        if u_ciudad == "Otra":
-            u_ciudad = st.text_input("¿Cuál ciudad?")
-            
-        u_lamina = st.text_input("🆔 Número (Ej: ARG 10)").upper()
-        u_cel = st.text_input("📞 WhatsApp (Sin el +)")
-        
-        if st.form_submit_button("¡PUBLICAR!"):
-            if u_nombre and u_lamina and u_cel:
-                c.execute('INSERT INTO intercambio (usuario, ciudad, repetida, contacto) VALUES (?,?,?,?)', 
-                          (u_nombre, u_ciudad, u_lamina, u_cel))
-                conn.commit()
-                st.success(f"¡{u_lamina} publicada en {u_ciudad}!")
-                st.rerun()
+    st.subheader("🇨🇴 Selección Colombia")
+    # Generamos cuadrícula de 12 láminas de ejemplo
+    laminas = [f"COL {i}" for i in range(1, 13)]
+    cols = st.columns(4)
+    for i, num in enumerate(laminas):
+        with cols[i % 4]:
+            if st.button(num, key=num):
+                st.toast(f"¡Añadida a repetidas: {num}!")
 
 with tab2:
-    df = pd.read_sql_query("SELECT * FROM intercambio", conn)
+    st.subheader("🔄 Intercambios en tu zona")
+    ciudades_col = ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga", "Pereira", "Cúcuta", "Otra"]
+    f_ciudad = st.selectbox("📍 Filtrar Ciudad", ciudades_col)
     
+    # Formulario para publicar
+    with st.expander("➕ PUBLICAR MI REPETIDA"):
+        with st.form("pub"):
+            u_nom = st.text_input("Nombre")
+            u_lam = st.text_input("Número de lámina").upper()
+            u_wha = st.text_input("WhatsApp")
+            if st.form_submit_button("¡PUBLICAR!"):
+                c.execute('INSERT INTO intercambio (usuario, ciudad, repetida, contacto) VALUES (?,?,?,?)', (u_nom, f_ciudad, u_lam, u_wha))
+                conn.commit()
+                st.success("¡Listo para cambiar!")
+                st.rerun()
+
+    # Mostrar cambios reales
+    df = pd.read_sql_query("SELECT * FROM intercambio", conn)
     if not df.empty:
-        c1, c2 = st.columns(2)
-        with c1:
-            f_ciudad = st.selectbox("Filtrar por Ciudad", ["Todas"] + sorted(df['ciudad'].unique().tolist()))
-        with c2:
-            f_busq = st.text_input("🔎 Número de lámina").upper()
-
-        res = df
-        if f_ciudad != "Todas": res = res[res['ciudad'] == f_ciudad]
-        if f_busq: res = res[res['repetida'].str.contains(f_busq, na=False)]
-
-        for i, fila in res.iterrows():
+        for _, fila in df.iterrows():
             st.markdown(f"""
-                <div class="cromo-card">
-                    <h1 style="margin: 0; color: #8D1B3D; font-size: 45px;">{fila['repetida']}</h1>
-                    <p style="margin: 10px 0; color: #333;">
-                        <b>📍 {fila['ciudad']}</b><br>
-                        👤 {fila['usuario']}
-                    </p>
-                    <a href="https://wa.me{fila['contacto']}" class="whatsapp-btn" target="_blank">📲 CONTACTAR</a>
+                <div class="swap-card">
+                    <h3 style="margin:0; color:#612D8A;">{fila['repetida']}</h3>
+                    <p style="margin:5px 0;">📍 {fila['ciudad']} | 👤 {fila['usuario']}</p>
+                    <a href="https://wa.me{fila['contacto']}" style="color:#00A3E0; font-weight:bold; text-decoration:none;">📲 CONTACTAR</a>
                 </div>
             """, unsafe_allow_html=True)
-    else:
-        st.info("Aún no hay láminas. ¡Sé el primero!")
+
+with tab3:
+    st.subheader("Tu Camino al Éxito")
+    val = st.slider("¿Cuántas láminas tienes ya?", 0, 980, 150)
+    porcentaje = round((val / 980) * 100, 1)
+    st.metric("Progreso Total", f"{porcentaje}%")
+    st.progress(val / 980)
+    st.write(f"Te faltan **{980 - val}** láminas para llenar el álbum.")
+
+# Navegación inferior (Visual)
+st.markdown("""
+    <div class="nav-bottom">
+        <div class="nav-item">🏠<br>INICIO</div>
+        <div class="nav-item">🗂️<br>ÁLBUM</div>
+        <div class="nav-item">🤝<br>CAMBIOS</div>
+        <div class="nav-item">📊<br>META</div>
+    </div>
+    <br><br>
+    """, unsafe_allow_html=True)
